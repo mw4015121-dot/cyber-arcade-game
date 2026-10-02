@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#060814">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Cyber Arcade 3-in-1</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="arcade-app">
+        <!-- Header / Navigation -->
+        <header class="arcade-header">
+            <div class="brand">
+                <span class="neon-badge">RETRO 8-BIT</span>
+                <h1 class="logo-text">CYBER ARCADE</h1>
+            </div>
+            <div class="header-actions">
+                <button id="btn-install" class="icon-btn install-highlight" title="Install App on Device">📲 INSTALL</button>
+                <button id="btn-sound" class="icon-btn" title="Toggle Sound">🔊</button>
+                <button id="btn-pause" class="icon-btn" title="Pause Game">⏸️</button>
+                <button id="btn-fullscreen" class="icon-btn" title="Fullscreen">⛶</button>
+            </div>
+        </header>
+
+        <!-- Game Selector Tabs -->
+        <nav class="game-tabs">
+            <button class="tab-btn active" data-game="space">🚀 Galaxy Strike</button>
+            <button class="tab-btn" data-game="snake">🐍 Cyber Snake</button>
+            <button class="tab-btn" data-game="brick">🧱 Brick Breaker</button>
+        </nav>
+
+        <!-- Main Game Screen Area -->
+        <main class="game-viewport">
+            <div class="hud-bar">
+                <div class="hud-item">
+                    <span class="hud-label">SCORE</span>
+                    <span id="hud-score" class="hud-val neon-cyan">00000</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">HIGH</span>
+                    <span id="hud-high" class="hud-val neon-gold">00000</span>
+                </div>
+                <div class="hud-item" id="hud-lives-container">
+                    <span class="hud-label">LIVES</span>
+                    <span id="hud-lives" class="hud-val neon-pink">❤️❤️❤️</span>
+                </div>
+                <div class="hud-item" id="hud-wave-container">
+                    <span class="hud-label" id="hud-wave-label">WAVE</span>
+                    <span id="hud-wave" class="hud-val neon-green">1</span>
+                </div>
+            </div>
+
+            <!-- Canvas Element -->
+            <div class="canvas-wrapper">
+                <canvas id="game-canvas" width="400" height="580"></canvas>
+            </div>
+
+            <!-- Mobile Touch Controls Overlay -->
+            <div class="touch-controls" id="touch-controls">
+                <!-- Virtual D-Pad for Snake / Space / Bricks -->
+                <div class="dpad" id="dpad">
+                    <button class="dpad-btn dpad-up" id="btn-dpad-up">▲</button>
+                    <div class="dpad-middle">
+                        <button class="dpad-btn dpad-left" id="btn-dpad-left">◀</button>
+                        <div class="dpad-center"></div>
+                        <button class="dpad-btn dpad-right" id="btn-dpad-right">▶</button>
+                    </div>
+                    <button class="dpad-btn dpad-down" id="btn-dpad-down">▼</button>
+                </div>
+
+                <!-- Action Button (Bomb / Launch / Action) -->
+                <div class="action-buttons">
+                    <button class="action-btn bomb-btn" id="btn-bomb">
+                        <span class="btn-icon">💣</span>
+                        <span class="btn-text">NUKE (<span id="bomb-count">2</span>)</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Game Over Modal -->
+        <div class="modal-overlay hidden" id="gameover-modal">
+            <div class="arcade-card modal-card">
+                <h2 class="modal-title neon-pink">GAME OVER</h2>
+                <div class="modal-stats">
+                    <div class="stat-row">
+                        <span>FINAL SCORE:</span>
+                        <span id="final-score" class="neon-cyan">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>BEST RECORD:</span>
+                        <span id="best-score" class="neon-gold">0</span>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-restart" class="retro-btn btn-glow-pink">PLAY AGAIN ↺</button>
+                    <button id="btn-switch-game" class="retro-btn btn-outline">SELECT GAME</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Modal -->
+        <div class="modal-overlay hidden" id="pause-modal">
+            <div class="arcade-card modal-card">
+                <h2 class="modal-title neon-cyan">PAUSED</h2>
+                <div class="modal-actions">
+                    <button id="btn-resume" class="retro-btn btn-glow-cyan">RESUME ▶</button>
+                    <button id="btn-pause-restart" class="retro-btn btn-outline">RESTART ↺</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="audio.js"></script>
+    <script src="space_shooter.js"></script>
+    <script src="snake.js"></script>
+    <script src="brick_breaker.js"></script>
+    <script src="main.js"></script>
+
+    <!-- PWA Install and Service Worker Script -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
+            });
+        }
+
+        let deferredPrompt;
+        const btnInstall = document.getElementById('btn-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (btnInstall) btnInstall.style.display = 'inline-block';
+        });
+
+        if (btnInstall) {
+            btnInstall.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    if (outcome === 'accepted') {
+                        btnInstall.style.display = 'none';
+                    }
+                } else {
+                    alert('Mobile Browser (Chrome) me menu (3 dots ⋮) par click karein aur "Add to Home screen" ya "Install App" select karein!');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
